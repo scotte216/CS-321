@@ -1,0 +1,9 @@
+# AST Program
+ClassDecl test
+  MethodDecl IntType go ((Param IntType i) )
+   VarDecl IntType j ()
+   Assign j 2
+   Print i
+   Return (Binop + i j)
+  MethodDecl void main ((Param IntType x) )
+   VarDecl IntType i (Call This g (x ))

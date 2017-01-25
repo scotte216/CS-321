@@ -1,0 +1,113 @@
+Program    -> {ClassDecl}
+
+ClassDecl  -> "class" <ID> ["extends" <ID>] "{" {VarDecl} "public" {MethodDecl} "}"
+
+MethodDecl -> ExtType <ID> "(" [Param {"," Param}] ")" "{" {VarDecl} {Stmt} "}"
+           |  "static" "void" "main" "(" "String" "[" "]" <ID> ")" "{" {VarDecl} {Stmt} "}"
+
+Param      -> Type <ID>
+
+VarDecl    -> Type <ID> ["=" InitExpr] ";"
+
+ExtType    -> Type | "void"
+
+Type       -> BasicType  ("[" "]")             
+           |  <ID>                          // object type
+
+BasicType  -> "int" | "double" | "boolean"
+
+Stmt       -> "{" {Stmt} "}"                         // stmt block
+           |  ExtId "(" [Args] ")" ";"            // call stmt
+           |  Lvalue "=" InitExpr ";"             // assignment
+           |  "if" "(" Expr ")" Stmt ["else" Stmt]    
+           |  "while" "(" Expr ")" Stmt               
+           |  "System" "." "out" "." "println" "(" [PrArg] ")" ";"                
+           |  "return" [Expr] ";"
+
+Args       -> Expr {"," Expr}
+
+PrArg      -> Expr | <STRLIT>
+
+InitExpr   -> "new" ExprNew        // new object or array
+           |  Expr 
+
+ExprNew    -> BasicType "[" <INTLIT> "]"
+            | <ID> "(" ")"
+
+Expr       -> Expr BinOp Expr 
+           |  UnOp Expr
+           |  "(" Expr ")" 
+           |  ExtId "(" [Args] ")"          // method call             
+           |  Lvalue
+           |  Literal
+
+expression is like: x = expression = (a+b) - c or x = 5+ function(a)
+expr -> expr conditional expr
+expr -> expr comparison expr 
+example from class for math
+Ambiguous:
+E -> E + E
+E -> E * E
+E -> id
+----------
+unambiguous with * having precidence (deal with left recursion later)
+E -> E + T
+E -> T
+T -> T * id
+T -> id 
+
+
+
+E -> E || O
+E -> O 
+Expr -> AndCase {"||" AndCase}
+
+AndCase -> CompCase {"&&" CompCase}
+
+CompCase -> AddSubCase {Compare AddSubCase} (Compare -> "==" | "!=" | "<" | "<=" | ">" | ">=" ) 
+
+AddSubCase -> MulDivCase {AddSub MulDivCase} (AddSub -> "+" | "-")
+
+MulDivCase -> UnOpCase {MulDiv UnOpCase} (MulDiv -> "*" | "/" )
+
+UnOpCase -> UnOp MethodCallCase | MethodCallCase  (UnOp -> "-" | "!") *probably need lookahead for - case (minus or negaive).  
+
+MethodCallCase -> ExtId "(" [Args] ")" | Parens
+
+Parens -> "(" Expr ")" | Terminals
+Terminals -> Lvalue | Literal
+
+U -> method call X
+U -> X
+X -> new N
+X -> N
+N ->  () 
+parsing in java
+
+
+Expr      -> UnOp Expr {BinOp Expr}
+          |  "(" Expr ")" {BinOp Expr}
+          |  ExtId "(" [Args] ")" {BinOp Expr}
+          |  Lvalue {BinOp Expr}
+          |  Literal {BinOp Expr}
+
+Lvalue     -> ExtId ("[" Expr "]")  
+
+ExtId      -> ["this" "."] <ID> {"." <ID>}  // object field or just ID
+
+Literal    -> <INTLIT> | <DBLLIT> | "true" | "false"
+
+BinOp      -> "+"  | "-"  | "*" | "/"  | "&&" | "||"
+           |  "==" | "!=" | "<" | "<=" | ">"  | ">=" 
+
+UnOp       -> "-" | "!"
+
+
+     new, ()                    // highest
+     [], ., method call
+     -, ! 
+     *, / 
+     +, - 
+     ==, !=,  <, <=,  >, >=
+     &&
+     ||                         // lowest

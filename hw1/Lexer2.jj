@@ -1,0 +1,177 @@
+// This is supporting software for CS321/CS322 Compilers and Language Design.
+// Copyright (c) Portland State University.
+//---------------------------------------------------------------------------
+// For CS321 F'15 (J. Li).
+// Scott Ewing
+
+// A lexer for the regular expression language, RE. (JavaCC version)
+//
+//
+PARSER_BEGIN(Lexer2)
+public class Lexer2 {}
+class LexicalError extends TokenMgrError {
+    public LexicalError(String message, int num)
+    {
+        super(message,num);
+    }
+}
+PARSER_END(Lexer2)
+
+// Token Definitions
+//
+// whitespace chars and comments
+
+SKIP:   { " " | "\t" | "\r" | "\n" 
+        | <"//" (~["\n","\r"])* ("\n"|"\r")> 
+        }
+
+//Block comment: Note, these don't work if you do "/*" instead of "/" "*"
+SKIP: {<"/" "*" (~["*"])* "*" ("*" | ~["*","/"] (~["*"])* "*")* "/"> }
+SPECIAL_TOKEN: {<JUNK: "/" "*" (~["*"])* "*" ("*" | ~["*","/"] (~["*"])* "*")*> 
+                    { if (true) throw new LexicalError("at (" + matchedToken.beginLine + 
+                          "," + matchedToken.beginColumn + "). Unclosed comments: " + 
+                          matchedToken.image, 0); } }
+//alternate version. 
+//MORE:   { "/*" : BLOCKCOMMENT}
+//<BLOCKCOMMENT> MORE: {< ~[] > }
+//<BLOCKCOMMENT> MORE: { "*/" : DEFAULT }
+
+
+
+//Operators and delimiters
+TOKEN:  { <ADD: "+" > }
+TOKEN:  { <SUB: "-" > }
+TOKEN:  { <MUL: "*" > }
+TOKEN:  { <DIV: "/" > }
+TOKEN:  { <AND: "&&" > }
+TOKEN:  { <OR: "||" > }
+TOKEN:  { <NOT: "!" > }
+TOKEN:  { <EQ: "==" > }
+TOKEN:  { <NE: "!=" > }
+TOKEN:  { <LT: "<" > }
+TOKEN:  { <LE: "<=" > }
+TOKEN:  { <GT: ">" > }
+TOKEN:  { <GE: ">=" > }
+TOKEN:  { <ASSGN: "=" > }
+TOKEN:  { <SEMI: ";" > }
+TOKEN:  { <COMMA: "," > }
+TOKEN:  { <DOT: "." > }
+TOKEN:  { <LPAREN: "(" > }
+TOKEN:  { <RPAREN: ")" > }
+TOKEN:  { <LBRAC: "[" > }
+TOKEN:  { <RBRAC: "]" > }
+TOKEN:  { <LCURLY: "{" > }
+TOKEN:  { <RCURLY: "}" > }
+
+//Keywords:
+TOKEN:  { <CLASS: "class" > }
+TOKEN:  { <EXTENDS: "extends" > }
+TOKEN:  { <STATIC: "static" > }
+TOKEN:  { <PUBLIC: "public" > }
+TOKEN:  { <MAIN: "main" > }
+TOKEN:  { <VOID: "void" > }
+TOKEN:  { <BOOLEAN: "boolean"> }
+TOKEN:  { <INT: "int"> }
+TOKEN:  { <DOUBLE: "double" > }
+TOKEN:  { <STRING: "String" > }
+TOKEN:  { <TRUE: "true" > }
+TOKEN:  { <FALSE: "false" > }
+TOKEN:  { <NEW: "new" > }
+TOKEN:  { <THIS: "this" > }
+TOKEN:  { <IF: "if" > }
+TOKEN:  { <ELSE: "else" > }
+TOKEN:  { <WHILE: "while" > }
+TOKEN:  { <RETURN: "return" > }
+TOKEN:  { <SYSTEM: "System" > }
+TOKEN:  { <OUT: "out" > }
+TOKEN:  { <PRINTLN: "println" > }
+
+//Used for reference only
+TOKEN:  {<#LETTER: ["a"-"z"] | ["A" - "Z" ] > }
+TOKEN:  {<#DIGIT: ["0"-"9"]> }
+TOKEN:  {<#INTTMP: "0" | (["1"-"9"])+(["0"-"9"])* > } 
+TOKEN:  {<#OCTTMP: "0"(["0"-"7"])+ > }
+TOKEN:  {<#HEXTMP: ("0X"|"0x")(["0"-"9"] | ["a"-"f"] | ["A"-"F"])+ >}
+
+//Literal integers in Dec,  Hex, and Oct
+TOKEN:  {<INTLIT: <INTTMP>|<OCTTMP>|<HEXTMP> > 
+        {
+            if (matchedToken.image.startsWith("0x")
+                ||matchedToken.image.startsWith("0X"))
+            { try {Integer.decode(matchedToken.image);}
+              catch (Exception e) 
+               {
+                 throw new LexicalError("at (" + matchedToken.beginLine + 
+                    "," + matchedToken.beginColumn + 
+                    "). Invalid hexadecimal literal: " +
+                        matchedToken.image,0);
+               }
+            } else if (matchedToken.image.startsWith("0") &&
+            matchedToken.image.length() > 1)
+            { 
+                try {Integer.parseInt(matchedToken.image,8);}
+                catch (Exception e)
+                {
+                 throw new LexicalError("at (" + matchedToken.beginLine + 
+                    "," + matchedToken.beginColumn + 
+                    "). Invalid octal literal: " +
+                        matchedToken.image,0);
+                }
+            }
+            else
+              { try {Integer.parseInt(matchedToken.image);}
+                catch (Exception e)
+                {
+                 throw new LexicalError("at (" + matchedToken.beginLine + 
+                    "," + matchedToken.beginColumn + "). Invalid decimal literal: " +
+                        matchedToken.image,0);
+                }
+              }
+        }
+}
+
+//Identifier tokens. 
+TOKEN:  {<ID: <LETTER>(<LETTER>|<DIGIT>)* > }
+
+//Alternative string routine. Was giving weird results.
+//<DEFAULT> MORE:  {<"\""> : IN_STRING}
+//<IN_STRING> MORE: {<~["\n","\r","\""]> }
+//<IN_STRING> SPECIAL_TOKEN: {<["\r","\n"] >
+//            {if (true) throw new TokenMgrError("at (" + matchedToken.beginLine +
+//           "," + matchedToken.beginColumn + "). Ill-formed or unclosed string: " +
+//             matchedToken.image,0);   }  }
+//<IN_STRING> TOKEN: {<STRLIT: "\""> : DEFAULT}
+
+
+//Double literal numbers
+TOKEN:  {<DBLLIT: (<DIGIT>)* "." (<DIGIT>)+ | (<DIGIT>)+ "." (<DIGIT>)* >
+            { try {Double.parseDouble(matchedToken.image);}
+              catch (Exception e) 
+              {
+                 throw new LexicalError("at (" + matchedToken.beginLine + 
+                    "," + matchedToken.beginColumn + 
+                    "). Invalid double literal: " +
+                        matchedToken.image,0);
+              }
+            }
+}
+
+//String Literals
+TOKEN:   { <STRLIT: "\"" (~["\"","\\","\n","\r"] 
+         | "\\"(["n","t","b","r","\\","\'","\""]))* "\"" > }
+SPECIAL_TOKEN:   {<GARBAGE:  "\"" (~["\"","\\","\n","\r"] 
+         | "\\"(["n","t","b","r","\\","\'","\""]))* > 
+           {if (true) throw new LexicalError("at (" + matchedToken.beginLine + 
+               "," + matchedToken.beginColumn + "). Ill-formed or unclosed string: " + 
+               matchedToken.image,0);}
+}
+
+//Anything that gets through
+SPECIAL_TOKEN: /* Catch illegal character */
+{
+  <~[]> { if (true) throw new LexicalError("at (" +
+				matchedToken.beginLine + "," + matchedToken.beginColumn  +
+                        "). Illegal character: " + matchedToken.image, 0); }
+}
+
+

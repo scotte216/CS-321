@@ -1,0 +1,7 @@
+[ClassDecl Test 
+  MethodDecl void main ((Param (ArrayType (ObjType String)) ignore) )
+   VarDecl Double a 3.14
+   VarDecl Double b 0.123
+   VarDecl Double c 55.0
+   Print (Binop + (Binop + (Field This a)  (Field This b) ) (Field This c) )
+]
